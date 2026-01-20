@@ -142,6 +142,13 @@ class DirectEngine {
         return undefined;
     }
 
+    FindBody(obj) {
+        const pair = this.Bodies.find(b => b[0] === obj);
+        if (pair) return pair[1];
+
+        return undefined;
+    }
+
     FixRotation(obj) {
         let body = this.Bodies.find(_obj => _obj[0] === obj);
         this.MatterBody.setInertia(body[1], Infinity);
