@@ -1,3 +1,8 @@
+document.body.style.overflow = "hidden";
+document.body.style.position = "fixed";
+document.body.style.width = "100%";
+document.body.style.height = "100%";
+
 class DirectEngine {
     constructor() {
         this.canvas = document.createElement("canvas");
@@ -70,6 +75,22 @@ class DirectEngine {
         this.Bodies.push([object.name, body]);
     }
 
+    AddCollisionEvent(labelA, labelB, callback) {
+        if(!this.Physics) return;
+
+        Matter.Events.on(this.Physics, "collisionStart", (event) => {
+            event.pairs.forEach((pair) => {
+                const nameA = this.Bodies.find(b => b[1] === pair.bodyA)?.[0];
+                const nameB = this.Bodies.find(b => b[1] === pair.bodyB)?.[0];
+
+                if ((nameA === labelA && nameB === labelB) || 
+                    (nameA === labelB && nameB === labelA)) {
+                    callback();
+                }
+            });
+        });
+    }
+
     NewScene(name) {
         this.Scenes.push({
             SceneName: name || `Scene-${this.Scenes.length+1}`,
@@ -104,6 +125,21 @@ class DirectEngine {
         }
     }
 
+    Destroy(obj, scene) {
+        if(this.Physics) {
+            let body = this.FindBody(obj);
+            if(body) {
+                Matter.World.remove(this.Physics.world, body);
+            }
+        }
+
+        let _obj = this.FindObject(obj, scene);
+        if(_obj) {
+            const sc = this.Scenes.find(s => s.SceneName === scene);
+            if(sc) sc.Objects.splice(sc.Objects.indexOf(_obj), 1);
+        }
+    }
+
     LoadScene(scene) {
         let a = 0;
 
@@ -125,6 +161,13 @@ class DirectEngine {
             x: x,
             y: y
         });
+    }
+
+    SetGravity(x, y) {
+        if (this.Physics) {
+            this.Physics.gravity.x = x;
+            this.Physics.gravity.y = y;
+        }
     }
 
     FindObject(obj, sceneName) {
@@ -191,6 +234,7 @@ class DirectEngine {
 class DirectGui {
     constructor() {
         this.Interfaces = [];
+        this.Inputs = {};
     }
 
     NewButton(name, x, y, width, height, event=()=>{}) {
@@ -217,21 +261,28 @@ class DirectGui {
 
         button.addEventListener("pointerdown", (e)=> {
             button.style.backgroundColor = "#3338";
+            this.Inputs[name] = true;
             event(e);
         });
 
         button.addEventListener("pointerup", (e)=> {
             button.style.backgroundColor = "#0008";
+            this.Inputs[name] = false;
         });
 
         button.addEventListener("pointerleave", (e)=> {
             button.style.backgroundColor = "#0008";
+            this.Inputs[name] = false;
         });
 
 
         button.innerText = name;
         this.Interfaces.push(button);
         document.body.appendChild(button);
+    }
+
+    IsDown(name) {
+        return !!this.Inputs[name];
     }
 }
 
